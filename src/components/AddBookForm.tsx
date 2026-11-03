@@ -10,12 +10,59 @@ export default function AddBookForm() {
   const [cover, setCover] = useState("");
   const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
-    // The API connection will be added in the backend phase.
-    setSubmitted(true);
+    setLoading(true);
+    setError("");
+    setSubmitted(false);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/books`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            author,
+            category,
+            cover,
+            description,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to add book");
+      }
+
+      setSubmitted(true);
+
+      // Clear the form after successful submission.
+      setTitle("");
+      setAuthor("");
+      setCategory("");
+      setCover("");
+      setDescription("");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong"
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -116,10 +163,29 @@ export default function AddBookForm() {
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-[#174c3c] px-6 py-3.5 font-semibold text-white transition hover:bg-[#10382c]"
+          disabled={loading}
+          className="w-full rounded-xl bg-[#174c3c] px-6 py-3.5 font-semibold text-white transition hover:bg-[#10382c] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Add Book
+          {loading ? "Adding Book..." : "Add Book"}
         </button>
+
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg bg-red-50 p-4 text-sm text-red-700"
+          >
+            {error}
+          </p>
+        )}
+
+        {submitted && (
+          <p
+            role="status"
+            className="rounded-lg bg-[#e9eee9] p-4 text-sm text-[#174c3c]"
+          >
+            Book added successfully!
+          </p>
+        )}
 
         {submitted && (
           <p role="status" className="rounded-lg bg-[#e9eee9] p-4 text-sm text-[#174c3c]">
