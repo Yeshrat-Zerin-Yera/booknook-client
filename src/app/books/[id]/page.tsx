@@ -1,24 +1,40 @@
-import type { Metadata } from "next";
+
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BookOpen } from "lucide-react";
-import { books } from "@/data/books";
+import { Book } from "@/types/book";
 
 interface BookDetailsPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
+}
+
+async function getBook(id: string): Promise<Book | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/books/${id}`,
+      { cache: "no-store" }
+    );
+
+    if (response.status === 404) return null;
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch book");
+    }
+
+    const result = await response.json();
+
+    return result.data;
+  } catch (error) {
+    console.error("Error fetching book:", error);
+    throw error;
+  }
 }
 
 export async function generateMetadata({
   params,
-}: BookDetailsPageProps): Promise<Metadata> {
+}: BookDetailsPageProps) {
   const { id } = await params;
-
-  const book = books.find(
-    (item) => item.id === Number(id)
-  );
+  const book = await getBook(id);
 
   return {
     title: book ? `${book.title} | BookNook` : "Book Not Found | BookNook",
@@ -29,80 +45,61 @@ export default async function BookDetailsPage({
   params,
 }: BookDetailsPageProps) {
   const { id } = await params;
+  const book = await getBook(id);
 
-  const book = books.find(
-    (item) => item.id === Number(id)
-  );
-
-  if (!book) {
-    notFound();
-  }
+  if (!book) notFound();
 
   return (
-    <main className="min-h-screen bg-[#faf9f6] px-6 py-16">
-      <div className="mx-auto max-w-6xl">
+    <section className="mx-auto max-w-7xl px-6 py-16">
+      <Link
+        href="/books"
+        className="mb-8 inline-block font-semibold text-[#174c3c] hover:text-[#a17c45]"
+      >
+        ← Back to All Books
+      </Link>
 
-        <Link
-          href="/books"
-          className="mb-10 inline-flex items-center gap-2 font-semibold text-[#174c3c] hover:text-[#a17c45]"
-        >
-          <ArrowLeft size={18} />
-          Back to All Books
-        </Link>
+      <div className="grid gap-12 md:grid-cols-2">
+        <div className="relative mx-auto h-[450px] w-full max-w-sm overflow-hidden rounded-2xl bg-gray-100">
+          <Image
+            src={book.cover}
+            alt={book.title}
+            fill
+            unoptimized
+            className="object-cover"
+          />
+        </div>
 
-        <div className="grid gap-12 rounded-3xl bg-white p-8 shadow-sm md:grid-cols-2 md:p-12">
+        <div className="flex flex-col justify-center">
+          <p className="mb-4 text-sm font-bold uppercase tracking-widest text-[#a17c45]">
+            {book.category}
+          </p>
 
-          <div className="relative min-h-[400px] overflow-hidden rounded-2xl bg-[#eeeae1]">
-            <Image
-              src={book.cover}
-              alt={book.title}
-              fill
-              unoptimized
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-          </div>
+          <h1 className="text-4xl font-bold text-[#174c3c]">
+            {book.title}
+          </h1>
 
-          <div className="flex flex-col justify-center">
-            <span className="w-fit rounded-full bg-[#e9eee9] px-4 py-2 text-sm font-semibold text-[#174c3c]">
-              {book.category}
-            </span>
+          <p className="mt-4 text-lg text-gray-500">
+            By {book.author}
+          </p>
 
-            <h1 className="mt-6 text-4xl font-bold leading-tight text-[#174c3c]">
-              {book.title}
-            </h1>
+          <div className="my-8 h-px bg-gray-200" />
 
-            <p className="mt-4 text-lg text-gray-500">
-              Written by {book.author}
-            </p>
+          <h2 className="mb-3 text-xl font-semibold text-[#174c3c]">
+            About This Book
+          </h2>
 
-            <div className="my-8 h-px bg-[#e8e3d8]" />
+          <p className="leading-8 text-gray-600">
+            {book.description}
+          </p>
 
-            <h2 className="text-xl font-bold text-[#243b32]">
-              About This Book
-            </h2>
-
-            <p className="mt-4 leading-8 text-gray-600">
-              {book.description}
-            </p>
-
-            <div className="mt-8">
-              <p className="mb-4 text-sm text-gray-500">
-                Interested in reading this book?
-              </p>
-
-              <button
-                disabled
-                className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-[#174c3c] px-7 py-3.5 font-semibold text-white opacity-60"
-              >
-                <BookOpen size={18} />
-                Borrow Book (Coming Soon)
-              </button>
-            </div>
-          </div>
-
+          <button
+            disabled
+            className="mt-8 w-fit rounded-xl bg-[#174c3c] px-8 py-3 font-semibold text-white opacity-60"
+          >
+            Borrow Book — Coming Soon
+          </button>
         </div>
       </div>
-    </main>
+    </section>
   );
 }

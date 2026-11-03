@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { BookOpen, RotateCcw } from "lucide-react";
-import { books } from "@/data/books";
+import { books } from "@/data/book";
 
 export default function MyBorrowsList() {
   // Temporary sample: first two books are borrowed.

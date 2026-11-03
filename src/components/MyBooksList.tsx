@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { BookOpen, Pencil, Trash2 } from "lucide-react";
-import { books } from "@/data/books";
+import { books } from "@/data/book";
 
 export default function MyBooksList() {
   return (

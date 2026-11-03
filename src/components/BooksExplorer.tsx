@@ -1,12 +1,40 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import BookCard from "@/components/BookCard";
-import { books } from "@/data/books";
+import { useEffect, useMemo, useState } from "react";
+import BookCard from "./BookCard";
+import { Book } from "@/types/book";
 
 export default function BooksExplorer() {
+  const [books, setBooks] = useState<Book[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchBooks() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/books`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch books");
+        }
+
+        const result = await response.json();
+        setBooks(result.data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Something went wrong"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBooks();
+  }, []);
 
   const categories = [
     "All",
@@ -24,37 +52,45 @@ export default function BooksExplorer() {
 
       return matchesSearch && matchesCategory;
     });
-  }, [search, category]);
+  }, [books, search, category]);
+
+  if (loading) {
+    return <p className="py-20 text-center">Loading books...</p>;
+  }
+
+  if (error) {
+    return <p className="py-20 text-center text-red-600">{error}</p>;
+  }
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16">
+    <section className="mx-auto min-h-screen max-w-7xl px-6 py-16">
       <div className="mb-10 text-center">
-        <p className="mb-3 text-sm font-bold uppercase tracking-widest text-[#a17c45]">
-          Find Your Next Read
+        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#9b7653]">
+          Explore Our Collection
         </p>
 
-        <h1 className="text-4xl font-bold text-[#174c3c]">
-          Explore All Books
+        <h1 className="mb-4 text-4xl font-bold text-[#174c3c]">
+          All Books
         </h1>
 
-        <p className="mt-3 text-gray-600">
-          Browse our collection and discover your next favorite story.
+        <p className="text-gray-500">
+          Discover your next favorite book.
         </p>
       </div>
 
       <div className="mb-10 flex flex-col gap-4 sm:flex-row">
         <input
           type="text"
-          placeholder="Search by book title or author..."
+          placeholder="Search by title or author..."
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="w-full rounded-xl border border-[#e8e3d8] bg-white px-5 py-3 outline-none focus:border-[#174c3c]"
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 rounded-xl border border-gray-200 px-5 py-3 outline-none focus:border-[#174c3c]"
         />
 
         <select
           value={category}
-          onChange={(event) => setCategory(event.target.value)}
-          className="rounded-xl border border-[#e8e3d8] bg-white px-5 py-3 outline-none focus:border-[#174c3c]"
+          onChange={(e) => setCategory(e.target.value)}
+          className="rounded-xl border border-gray-200 px-5 py-3 outline-none"
         >
           {categories.map((item) => (
             <option key={item} value={item}>
@@ -64,25 +100,16 @@ export default function BooksExplorer() {
         </select>
       </div>
 
-      <p className="mb-6 text-sm text-gray-500">
-        Showing {filteredBooks.length} books
-      </p>
-
       {filteredBooks.length > 0 ? (
-        <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredBooks.map((book) => (
-            <BookCard key={book.id} {...book} />
+            <BookCard key={book._id} book={book} />
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl bg-white px-6 py-16 text-center">
-          <h2 className="text-xl font-bold text-[#174c3c]">
-            No books found
-          </h2>
-          <p className="mt-2 text-gray-500">
-            Try another search term or category.
-          </p>
-        </div>
+        <p className="py-20 text-center text-gray-500">
+          No books found.
+        </p>
       )}
     </section>
   );
