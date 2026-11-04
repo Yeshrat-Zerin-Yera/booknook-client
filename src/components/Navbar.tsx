@@ -1,16 +1,46 @@
+
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, Menu, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { BookOpen, Menu, X, ChevronDown } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const navLinks = [
+  const router = useRouter();
+
+  const { data: session, isPending } = authClient.useSession();
+
+  const publicLinks = [
     { name: "Home", href: "/" },
     { name: "All Books", href: "/books" },
   ];
+
+  const privateLinks = [
+    { name: "Add Book", href: "/add-book" },
+    { name: "My Books", href: "/my-books" },
+    { name: "My Borrows", href: "/my-borrows" },
+  ];
+
+  async function handleLogout() {
+    const { error } = await authClient.signOut();
+
+    if (error) {
+      console.error("Logout failed:", error.message);
+      return;
+    }
+
+    setProfileOpen(false);
+    setIsOpen(false);
+    router.push("/");
+    router.refresh();
+  }
+
+  const user = session?.user;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-[#e8e3d8] bg-[#faf9f6]/95 backdrop-blur-md">
@@ -28,8 +58,8 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
+        <div className="hidden items-center gap-6 lg:flex">
+          {publicLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
@@ -38,23 +68,86 @@ export default function Navbar() {
               {link.name}
             </Link>
           ))}
+
+          {user &&
+            privateLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="font-medium text-gray-700 transition hover:text-[#174c3c]"
+              >
+                {link.name}
+              </Link>
+            ))}
         </div>
 
-        {/* Authentication Buttons */}
-        <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/login"
-            className="rounded-lg px-5 py-2 font-medium text-[#174c3c] transition hover:bg-[#e9eee9]"
-          >
-            Login
-          </Link>
+        {/* Desktop Authentication */}
+        <div className="relative hidden items-center gap-3 md:flex">
+          {isPending ? (
+            <span className="text-sm text-gray-500">Loading...</span>
+          ) : user ? (
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 rounded-full p-1 transition hover:bg-[#e9eee9]"
+                aria-label="Open profile menu"
+                aria-expanded={profileOpen}
+              >
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt="Profile"
+                    className="h-10 w-10 rounded-full border border-[#e8e3d8] object-cover"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#174c3c] font-semibold text-white">
+                    {user.name?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                )}
 
-          <Link
-            href="/register"
-            className="rounded-lg bg-[#174c3c] px-5 py-2 font-medium text-white transition hover:bg-[#10382c]"
-          >
-            Register
-          </Link>
+                <ChevronDown className="h-4 w-4 text-[#174c3c]" />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute right-0 top-14 z-50 w-56 rounded-xl border border-[#e8e3d8] bg-white p-3 shadow-lg">
+                  <p className="border-b border-[#e8e3d8] px-3 pb-3 font-semibold text-[#174c3c]">
+                    {user.name}
+                  </p>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-gray-700 transition hover:bg-[#e9eee9]"
+                  >
+                    My Profile
+                  </Link>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full rounded-lg px-3 py-2 text-left text-red-600 transition hover:bg-red-50"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-lg px-5 py-2 font-medium text-[#174c3c] transition hover:bg-[#e9eee9]"
+              >
+                Login
+              </Link>
+
+              <Link
+                href="/register"
+                className="rounded-lg bg-[#174c3c] px-5 py-2 font-medium text-white transition hover:bg-[#10382c]"
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -76,7 +169,8 @@ export default function Navbar() {
       {isOpen && (
         <div className="border-t border-[#e8e3d8] bg-[#faf9f6] px-6 py-5 md:hidden">
           <div className="flex flex-col gap-4">
-            {navLinks.map((link) => (
+
+            {publicLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
@@ -87,23 +181,76 @@ export default function Navbar() {
               </Link>
             ))}
 
+            {user &&
+              privateLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className="font-medium text-gray-700 hover:text-[#174c3c]"
+                >
+                  {link.name}
+                </Link>
+              ))}
+
             <hr className="border-[#e8e3d8]" />
 
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="font-medium text-[#174c3c]"
-            >
-              Login
-            </Link>
+            {isPending ? (
+              <p className="text-sm text-gray-500">Loading...</p>
+            ) : user ? (
+              <>
+                <div className="flex items-center gap-3">
+                  {user.image ? (
+                    <img
+                      src={user.image}
+                      alt="Profile"
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#174c3c] font-semibold text-white">
+                      {user.name?.charAt(0).toUpperCase() || "U"}
+                    </div>
+                  )}
 
-            <Link
-              href="/register"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg bg-[#174c3c] px-5 py-2 text-center font-medium text-white"
-            >
-              Register
-            </Link>
+                  <span className="font-semibold text-[#174c3c]">
+                    {user.name}
+                  </span>
+                </div>
+
+                <Link
+                  href="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="font-medium text-gray-700 hover:text-[#174c3c]"
+                >
+                  My Profile
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="rounded-lg bg-[#174c3c] px-5 py-2 text-center font-medium text-white"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="font-medium text-[#174c3c]"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  href="/register"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-lg bg-[#174c3c] px-5 py-2 text-center font-medium text-white"
+                >
+                  Register
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

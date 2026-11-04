@@ -1,0 +1,98 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+
+export default function RegisterForm() {
+  const router = useRouter();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleRegister(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setError("");
+    setLoading(true);
+
+    try {
+      const { error } = await authClient.signUp.email({
+        name,
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message ?? "Something went wrong");
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-md rounded-2xl bg-white p-8 shadow-lg">
+      <h1 className="mb-2 text-3xl font-bold text-green-900">
+        Create Account
+      </h1>
+
+      <p className="mb-6 text-gray-500">
+        Join the BookNook community.
+      </p>
+
+      <form onSubmit={handleRegister} className="space-y-4">
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="w-full rounded-lg border p-3"
+        />
+
+        <input
+          type="email"
+          placeholder="Email Address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full rounded-lg border p-3"
+        />
+
+        <input
+          type="password"
+          placeholder="Password (minimum 8 characters)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          minLength={8}
+          required
+          className="w-full rounded-lg border p-3"
+        />
+
+        {error && (
+          <p className="text-sm text-red-600">{error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-lg bg-green-900 p-3 font-semibold text-white hover:bg-green-800 disabled:opacity-50"
+        >
+          {loading ? "Creating Account..." : "Register"}
+        </button>
+      </form>
+    </div>
+  );
+}
