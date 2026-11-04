@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useState } from "react";
 import { BookPlus } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 export default function AddBookForm() {
   const [title, setTitle] = useState("");
@@ -9,6 +11,7 @@ export default function AddBookForm() {
   const [category, setCategory] = useState("");
   const [cover, setCover] = useState("");
   const [description, setDescription] = useState("");
+
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,12 +26,22 @@ export default function AddBookForm() {
     setSubmitted(false);
 
     try {
+      // Step 1: Get JWT from Better Auth
+      const { data: tokenData, error: tokenError } =
+        await authClient.token();
+
+      if (tokenError || !tokenData?.token) {
+        throw new Error("Please log in before adding a book.");
+      }
+
+      // Step 2: Send authenticated request
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/books`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${tokenData.token}`,
           },
           body: JSON.stringify({
             title,
@@ -43,12 +56,13 @@ export default function AddBookForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to add book");
+        throw new Error(result.message || "Failed to add book.");
       }
 
+      // Step 3: Show success message
       setSubmitted(true);
 
-      // Clear the form after successful submission.
+      // Step 4: Clear the form
       setTitle("");
       setAuthor("");
       setCategory("");
@@ -58,7 +72,7 @@ export default function AddBookForm() {
       setError(
         err instanceof Error
           ? err.message
-          : "Something went wrong"
+          : "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -83,10 +97,12 @@ export default function AddBookForm() {
         onSubmit={handleSubmit}
         className="space-y-6 rounded-2xl border border-[#e8e3d8] bg-white p-6 shadow-sm sm:p-10"
       >
+        {/* Book Title */}
         <div>
           <label className="mb-2 block font-semibold text-gray-700">
             Book Title
           </label>
+
           <input
             type="text"
             required
@@ -97,10 +113,12 @@ export default function AddBookForm() {
           />
         </div>
 
+        {/* Author */}
         <div>
           <label className="mb-2 block font-semibold text-gray-700">
             Author
           </label>
+
           <input
             type="text"
             required
@@ -111,10 +129,12 @@ export default function AddBookForm() {
           />
         </div>
 
+        {/* Category */}
         <div>
           <label className="mb-2 block font-semibold text-gray-700">
             Category
           </label>
+
           <select
             required
             value={category}
@@ -133,10 +153,12 @@ export default function AddBookForm() {
           </select>
         </div>
 
+        {/* Cover Image */}
         <div>
           <label className="mb-2 block font-semibold text-gray-700">
             Cover Image URL
           </label>
+
           <input
             type="url"
             required
@@ -147,10 +169,12 @@ export default function AddBookForm() {
           />
         </div>
 
+        {/* Description */}
         <div>
           <label className="mb-2 block font-semibold text-gray-700">
             Description
           </label>
+
           <textarea
             required
             rows={5}
@@ -161,6 +185,7 @@ export default function AddBookForm() {
           />
         </div>
 
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
@@ -169,6 +194,7 @@ export default function AddBookForm() {
           {loading ? "Adding Book..." : "Add Book"}
         </button>
 
+        {/* Error Message */}
         {error && (
           <p
             role="alert"
@@ -178,18 +204,13 @@ export default function AddBookForm() {
           </p>
         )}
 
+        {/* Success Message */}
         {submitted && (
           <p
             role="status"
             className="rounded-lg bg-[#e9eee9] p-4 text-sm text-[#174c3c]"
           >
             Book added successfully!
-          </p>
-        )}
-
-        {submitted && (
-          <p role="status" className="rounded-lg bg-[#e9eee9] p-4 text-sm text-[#174c3c]">
-            Your form is valid! Book saving will be enabled when we connect the backend.
           </p>
         )}
       </form>

@@ -40,6 +40,19 @@ export default function LoginForm() {
     }
   }
 
+  async function handleGoogleLogin() {
+    setError("");
+
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      });
+    } catch {
+      setError("Google login failed. Please try again.");
+    }
+  }
+
   return (
     <div className="mx-auto max-w-md rounded-2xl bg-white p-8 shadow-lg">
       <h1 className="mb-2 text-3xl font-bold text-green-900">
@@ -81,6 +94,25 @@ export default function LoginForm() {
           {loading ? "Signing In..." : "Login"}
         </button>
       </form>
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200" />
+        <span className="text-sm text-gray-400">OR</span>
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 p-3 font-semibold text-gray-700 hover:bg-gray-50"
+      >
+        <img
+          src="https://www.google.com/favicon.ico"
+          alt="Google"
+          className="h-5 w-5"
+        />
+        Continue with Google
+      </button>
     </div>
   );
 }

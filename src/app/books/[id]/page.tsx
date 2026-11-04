@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Book } from "@/types/book";
+import BorrowButton from "@/components/BorrowButton";
 
 interface BookDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -37,7 +38,9 @@ export async function generateMetadata({
   const book = await getBook(id);
 
   return {
-    title: book ? `${book.title} | BookNook` : "Book Not Found | BookNook",
+    title: book
+      ? `${book.title} | BookNook`
+      : "Book Not Found | BookNook",
   };
 }
 
@@ -92,12 +95,7 @@ export default async function BookDetailsPage({
             {book.description}
           </p>
 
-          <button
-            disabled
-            className="mt-8 w-fit rounded-xl bg-[#174c3c] px-8 py-3 font-semibold text-white opacity-60"
-          >
-            Borrow Book — Coming Soon
-          </button>
+          <BorrowButton bookId={book._id} />
         </div>
       </div>
     </section>

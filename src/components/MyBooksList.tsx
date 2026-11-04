@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { BookOpen, Pencil, Trash2 } from "lucide-react";
 import { Book } from "@/types/book";
+import { authClient } from "@/lib/auth-client";
 
 export default function MyBooksList() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -15,22 +16,42 @@ export default function MyBooksList() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Fetch only the logged-in user's books
   useEffect(() => {
     async function fetchBooks() {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/books`
-        );
+        // Get JWT from Better Auth
+        const { data: tokenData, error: tokenError } =
+          await authClient.token();
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch books");
+        if (tokenError || !tokenData?.token) {
+          throw new Error("Please log in to view your books.");
         }
 
+        // Request user's books from backend
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/books/my-books`,
+          {
+            headers: {
+              Authorization: `Bearer ${tokenData.token}`,
+            },
+          }
+        );
+
         const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.message || "Failed to fetch your books."
+          );
+        }
+
         setBooks(result.data);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Something went wrong"
+          err instanceof Error
+            ? err.message
+            : "Something went wrong."
         );
       } finally {
         setLoading(false);
@@ -40,6 +61,7 @@ export default function MyBooksList() {
     fetchBooks();
   }, []);
 
+  // Delete a book
   async function handleDelete(id: string) {
     const confirmed = window.confirm(
       "Are you sure you want to delete this book?"
@@ -51,32 +73,52 @@ export default function MyBooksList() {
       setDeletingId(id);
       setError("");
 
+      // Get JWT from Better Auth
+      const { data: tokenData, error: tokenError } =
+        await authClient.token();
+
+      if (tokenError || !tokenData?.token) {
+        throw new Error("Please log in before deleting a book.");
+      }
+
+      // Send authenticated DELETE request
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/books/${id}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${tokenData.token}`,
+          },
         }
       );
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to delete book");
+        throw new Error(
+          result.message || "Failed to delete book."
+        );
       }
 
+      // Remove deleted book from UI
       setBooks((previousBooks) =>
         previousBooks.filter((book) => book._id !== id)
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Something went wrong"
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
       );
     } finally {
       setDeletingId(null);
     }
   }
 
-  async function handleUpdate(event: React.FormEvent<HTMLFormElement>) {
+  // Update a book
+  async function handleUpdate(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     if (!editingBook) return;
@@ -85,12 +127,22 @@ export default function MyBooksList() {
       setSaving(true);
       setError("");
 
+      // Get JWT from Better Auth
+      const { data: tokenData, error: tokenError } =
+        await authClient.token();
+
+      if (tokenError || !tokenData?.token) {
+        throw new Error("Please log in before editing a book.");
+      }
+
+      // Send authenticated PATCH request
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/books/${editingBook._id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${tokenData.token}`,
           },
           body: JSON.stringify({
             title: editingBook.title,
@@ -105,31 +157,44 @@ export default function MyBooksList() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to update book");
+        throw new Error(
+          result.message || "Failed to update book."
+        );
       }
 
+      // Update book in UI
       setBooks((previousBooks) =>
         previousBooks.map((book) =>
-          book._id === editingBook._id ? editingBook : book
+          book._id === editingBook._id
+            ? editingBook
+            : book
         )
       );
 
       setEditingBook(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Something went wrong"
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
       );
     } finally {
       setSaving(false);
     }
   }
 
+  // Loading state
   if (loading) {
-    return <p className="py-20 text-center">Loading your books...</p>;
+    return (
+      <p className="py-20 text-center">
+        Loading your books...
+      </p>
+    );
   }
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-16">
+      {/* Page Heading */}
       <div className="mb-10">
         <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#a17b45]">
           Your Collection
@@ -144,17 +209,22 @@ export default function MyBooksList() {
         </p>
       </div>
 
+      {/* Error Message */}
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 p-4 text-red-700">
+        <p
+          role="alert"
+          className="mb-6 rounded-lg bg-red-50 p-4 text-red-700"
+        >
           {error}
         </p>
       )}
 
+      {/* Edit Book Modal */}
       {editingBook && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
 
-            {/* Close button */}
+            {/* Close Button */}
             <button
               type="button"
               onClick={() => setEditingBook(null)}
@@ -172,72 +242,100 @@ export default function MyBooksList() {
               Edit Book
             </h2>
 
-            <form onSubmit={handleUpdate} className="space-y-4">
-
+            <form
+              onSubmit={handleUpdate}
+              className="space-y-4"
+            >
+              {/* Book Title */}
               <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-700">
                   Book Title
                 </label>
+
                 <input
                   value={editingBook.title}
                   onChange={(e) =>
-                    setEditingBook({ ...editingBook, title: e.target.value })
+                    setEditingBook({
+                      ...editingBook,
+                      title: e.target.value,
+                    })
                   }
                   required
                   className="w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#174c3c] focus:ring-2 focus:ring-[#174c3c]/20"
                 />
               </div>
 
+              {/* Author */}
               <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-700">
                   Author
                 </label>
+
                 <input
                   value={editingBook.author}
                   onChange={(e) =>
-                    setEditingBook({ ...editingBook, author: e.target.value })
+                    setEditingBook({
+                      ...editingBook,
+                      author: e.target.value,
+                    })
                   }
                   required
                   className="w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#174c3c] focus:ring-2 focus:ring-[#174c3c]/20"
                 />
               </div>
 
+              {/* Category */}
               <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-700">
                   Category
                 </label>
+
                 <input
                   value={editingBook.category}
                   onChange={(e) =>
-                    setEditingBook({ ...editingBook, category: e.target.value })
+                    setEditingBook({
+                      ...editingBook,
+                      category: e.target.value,
+                    })
                   }
                   required
                   className="w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#174c3c] focus:ring-2 focus:ring-[#174c3c]/20"
                 />
               </div>
 
+              {/* Cover Image */}
               <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-700">
                   Cover Image URL
                 </label>
+
                 <input
+                  type="url"
                   value={editingBook.cover}
                   onChange={(e) =>
-                    setEditingBook({ ...editingBook, cover: e.target.value })
+                    setEditingBook({
+                      ...editingBook,
+                      cover: e.target.value,
+                    })
                   }
                   required
                   className="w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#174c3c] focus:ring-2 focus:ring-[#174c3c]/20"
                 />
               </div>
 
+              {/* Description */}
               <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-700">
                   Description
                 </label>
+
                 <textarea
                   value={editingBook.description}
                   onChange={(e) =>
-                    setEditingBook({ ...editingBook, description: e.target.value })
+                    setEditingBook({
+                      ...editingBook,
+                      description: e.target.value,
+                    })
                   }
                   required
                   rows={4}
@@ -245,6 +343,7 @@ export default function MyBooksList() {
                 />
               </div>
 
+              {/* Modal Buttons */}
               <div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -262,12 +361,12 @@ export default function MyBooksList() {
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
 
+      {/* Books List */}
       <div className="overflow-hidden rounded-2xl border border-[#e8e3d8] bg-white">
         {books.length > 0 ? (
           books.map((book) => (
@@ -275,6 +374,7 @@ export default function MyBooksList() {
               key={book._id}
               className="flex flex-col gap-5 border-b border-[#e8e3d8] p-5 last:border-b-0 sm:flex-row sm:items-center"
             >
+              {/* Book Cover */}
               <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-[#eeeae1]">
                 <Image
                   src={book.cover}
@@ -285,6 +385,7 @@ export default function MyBooksList() {
                 />
               </div>
 
+              {/* Book Information */}
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-bold text-[#243b32]">
                   {book.title}
@@ -299,6 +400,7 @@ export default function MyBooksList() {
                 </span>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
                 <Link
                   href={`/books/${book._id}`}
@@ -324,7 +426,9 @@ export default function MyBooksList() {
                   className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Trash2 size={16} />
-                  {deletingId === book._id ? "Deleting..." : "Delete"}
+                  {deletingId === book._id
+                    ? "Deleting..."
+                    : "Delete"}
                 </button>
               </div>
             </div>
@@ -336,6 +440,7 @@ export default function MyBooksList() {
         )}
       </div>
 
+      {/* Book Count */}
       <p className="mt-5 text-sm text-gray-500">
         Showing {books.length} books.
       </p>
