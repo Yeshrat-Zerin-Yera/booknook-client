@@ -20,10 +20,10 @@ export default function NotFound() {
       </p>
 
       <Link
-        href="/books"
+        href="/"
         className="mt-8 rounded-xl bg-[#174c3c] px-7 py-3 font-semibold text-white transition hover:bg-[#10382c]"
       >
-        Explore All Books
+        Back To Home
       </Link>
 
     </main>

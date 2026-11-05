@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { BookOpen, RotateCcw, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface Borrow {
   _id: string;
@@ -131,26 +132,28 @@ export default function MyBorrowsList() {
   }
 
   // Authentication loading / redirect
-  if (isPending || !session) {
-    return (
-      <section className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-[#174c3c]">
-          Checking authentication...
-        </p>
-      </section>
-    );
-  }
+ if (isPending || !session) {
+  return (
+    <section className="min-h-screen">
+      <LoadingSpinner
+        message="Checking authentication..."
+        fullScreen
+      />
+    </section>
+  );
+}
 
   // Borrow records loading
   if (loading) {
-    return (
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <p className="text-gray-500">
-          Loading your borrowed books...
-        </p>
-      </section>
-    );
-  }
+  return (
+    <section className="min-h-screen">
+      <LoadingSpinner
+        message="Loading your borrowed books..."
+        fullScreen
+      />
+    </section>
+  );
+}
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-16">

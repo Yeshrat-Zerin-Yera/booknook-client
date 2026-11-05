@@ -1,12 +1,20 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function ProfileContent() {
   const { data: session, isPending } = authClient.useSession();
 
   if (isPending) {
-    return <p className="p-10 text-center">Loading profile...</p>;
+    return (
+      <section className="min-h-[60vh]">
+        <LoadingSpinner
+          message="Loading your profile..."
+          fullScreen
+        />
+      </section>
+    );
   }
 
   if (!session) {

@@ -4,7 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import BookCard from "./BookCard";
-import { Book } from "@/types/book";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import type { Book } from "@/types/book";
 
 const allowedCategories = [
   "Fiction",
@@ -24,7 +25,6 @@ export default function BooksExplorer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Read the selected category from the URL.
   useEffect(() => {
     if (urlCategory && allowedCategories.includes(urlCategory)) {
       setCategory(urlCategory);
@@ -72,11 +72,19 @@ export default function BooksExplorer() {
   }, [books, search, category]);
 
   if (loading) {
-    return <p className="py-20 text-center">Loading books...</p>;
+    return (
+      <section className="min-h-screen">
+        <LoadingSpinner message="Loading books..." fullScreen />
+      </section>
+    );
   }
 
   if (error) {
-    return <p className="py-20 text-center text-red-600">{error}</p>;
+    return (
+      <p className="py-20 text-center text-red-600">
+        {error}
+      </p>
+    );
   }
 
   return (

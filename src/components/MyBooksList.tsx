@@ -17,6 +17,7 @@ import type { FormEvent } from "react";
 import type { Book } from "@/types/book";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const categories = [
   "Fiction",
@@ -292,14 +293,17 @@ useEffect(() => {
     }
   }
 
-  // Loading state
-  if (loading) {
-    return (
-      <p className="py-20 text-center text-[#174c3c]">
-        Loading your books...
-      </p>
-    );
-  }
+ // Loading state
+if (loading) {
+  return (
+    <section className="min-h-screen">
+      <LoadingSpinner
+        message="Loading your books..."
+        fullScreen
+      />
+    </section>
+  );
+}
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-16">

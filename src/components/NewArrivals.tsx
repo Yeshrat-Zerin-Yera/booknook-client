@@ -1,10 +1,10 @@
-
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import BookCard from "@/components/BookCard";
-import { Book } from "@/types/book";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import type { Book } from "@/types/book";
 
 export default function NewArrivals() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -23,7 +23,6 @@ export default function NewArrivals() {
         }
 
         const result = await response.json();
-
         setBooks(result.data.slice(0, 6));
       } catch (err) {
         setError(
@@ -67,9 +66,7 @@ export default function NewArrivals() {
         </div>
 
         {loading && (
-          <p className="py-12 text-center text-gray-500">
-            Loading new arrivals...
-          </p>
+          <LoadingSpinner message="Loading new arrivals..." />
         )}
 
         {error && (
