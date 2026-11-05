@@ -9,28 +9,33 @@ interface BookDetailsPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Fetch a single book from the backend
 async function getBook(id: string): Promise<Book | null> {
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/books/${id}`,
-      { cache: "no-store" }
-    );
-
-    if (response.status === 404) return null;
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch book");
-    }
-
-    const result = await response.json();
-
-    return result.data;
-  } catch (error) {
-    console.error("Error fetching book:", error);
-    throw error;
+  // Validate MongoDB ObjectId before making the API request
+  if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+    return null;
   }
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/books/${id}`,
+    { cache: "no-store" }
+  );
+
+  // Book doesn't exist
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch book");
+  }
+
+  const result = await response.json();
+
+  return result.data;
 }
 
+// Dynamic page metadata
 export async function generateMetadata({
   params,
 }: BookDetailsPageProps) {
@@ -44,13 +49,17 @@ export async function generateMetadata({
   };
 }
 
+// Book details page
 export default async function BookDetailsPage({
   params,
 }: BookDetailsPageProps) {
   const { id } = await params;
   const book = await getBook(id);
 
-  if (!book) notFound();
+  // Show custom 404 page if book doesn't exist
+  if (!book) {
+    notFound();
+  }
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-16">
@@ -62,6 +71,7 @@ export default async function BookDetailsPage({
       </Link>
 
       <div className="grid gap-12 md:grid-cols-2">
+        {/* Book Cover */}
         <div className="relative mx-auto h-[450px] w-full max-w-sm overflow-hidden rounded-2xl bg-gray-100">
           <Image
             src={book.cover}
@@ -72,6 +82,7 @@ export default async function BookDetailsPage({
           />
         </div>
 
+        {/* Book Information */}
         <div className="flex flex-col justify-center">
           <p className="mb-4 text-sm font-bold uppercase tracking-widest text-[#a17c45]">
             {book.category}
@@ -95,6 +106,7 @@ export default async function BookDetailsPage({
             {book.description}
           </p>
 
+          {/* Borrow Button */}
           <BorrowButton bookId={book._id} />
         </div>
       </div>
