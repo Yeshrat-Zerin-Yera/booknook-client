@@ -1,37 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 BookNook – Your Online Library
 
-## Getting Started
+**BookNook** is a small online library platform where users can explore books, discover new reads, borrow books, and manage their borrowing activities.
 
-First, run the development server:
+🌐 **Live Website:** https://booknook-client-h8et-jet.vercel.app/
+
+## ✨ Features
+
+- **User Authentication:** Register and sign in securely using email and password.
+- **Google Authentication:** Sign in easily using your Google account.
+- **Browse Books:** Explore the available library collection and discover books.
+- **Book Details:** View individual book information and descriptions.
+- **Add Books:** Authenticated users can add new books to the library.
+- **Borrow Books:** Borrow available books and manage borrowing activities.
+- **My Borrows:** View borrowed books and their return dates.
+- **Return Books:** Return borrowed books and update available stock.
+- **Stock Management:** Available book copies decrease when borrowed and increase when returned.
+- **Dark and Light Mode:** Switch between themes for a comfortable browsing experience.
+- **Responsive Design:** Enjoy the website on desktop, tablet, and mobile devices.
+
+## 🛠️ Technologies Used
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- daisyUI
+- Better Auth
+- Lucide React
+
+## 🚀 Run Locally
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Yeshrat-Zerin-Yera/booknook-client.git
+```
+
+### 2. Navigate to the project directory
+
+```bash
+cd booknook-client
+```
+
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+### 4. Configure environment variables
+
+Create a `.env.local` file in the project root:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### 5. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📦 Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## 🔗 Related Repository
 
-To learn more about Next.js, take a look at the following resources:
+**Backend Repository:** https://github.com/Yeshrat-Zerin-Yera/booknook-server
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 👩‍💻 Developer
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Yeshrat Zerin Yera**
 
-## Deploy on Vercel
+- GitHub: https://github.com/Yeshrat-Zerin-Yera
+- LinkedIn: https://www.linkedin.com/in/yeshrat-zerin-yera/
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# booknook-client" 
+Made with ❤️ for book lovers.
