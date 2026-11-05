@@ -12,13 +12,17 @@ interface RequireAuthProps {
 export default function RequireAuth({ children }: RequireAuthProps) {
     const router = useRouter();
     const pathname = usePathname();
+
     const { data: session, isPending } = authClient.useSession();
 
     useEffect(() => {
-        if (!isPending && !session) {
-            router.replace("/login");
+        if (isPending) return;
+
+        if (!session) {
+            const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
+            router.replace(redirectUrl);
         }
-    }, [isPending, session, router]);
+    }, [isPending, session, pathname, router]);
 
     if (isPending || !session) {
         return (

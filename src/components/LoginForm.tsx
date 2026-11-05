@@ -1,17 +1,36 @@
+
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 export default function LoginForm() {
-    const router = useRouter();
-
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
+    // Get the intended destination after login.
+    function getSafeRedirectPath() {
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get("redirect");
+
+        if (!redirect) return "/";
+
+        try {
+            const url = new URL(redirect, window.location.origin);
+
+            if (url.origin !== window.location.origin) {
+                return "/";
+            }
+
+            return url.pathname + url.search + url.hash;
+        } catch {
+            return "/";
+        }
+    }
+
+    // Email and password login
     async function handleLogin(
         event: React.FormEvent<HTMLFormElement>
     ) {
@@ -31,8 +50,34 @@ export default function LoginForm() {
                 return;
             }
 
-            router.push("/");
-            router.refresh();
+            // Confirm that Better Auth can retrieve the session.
+            let authenticated = false;
+
+            for (let attempt = 0; attempt < 10; attempt++) {
+                const result = await authClient.getSession();
+
+                if (result.data?.session) {
+                    authenticated = true;
+                    break;
+                }
+
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 300)
+                );
+            }
+
+            if (!authenticated) {
+                setError(
+                    "Login succeeded, but your session could not be confirmed. Please try again."
+                );
+                return;
+            }
+
+            // Navigate with a full browser reload.
+            const redirectPath = getSafeRedirectPath();
+
+            window.location.replace(redirectPath);
+
         } catch {
             setError("Something went wrong. Please try again.");
         } finally {
@@ -40,13 +85,20 @@ export default function LoginForm() {
         }
     }
 
+    // Google login
     async function handleGoogleLogin() {
         setError("");
 
         try {
+            const redirectPath = getSafeRedirectPath();
+
+            const appUrl =
+                process.env.NEXT_PUBLIC_APP_URL ||
+                window.location.origin;
+
             await authClient.signIn.social({
                 provider: "google",
-                callbackURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+                callbackURL: `${appUrl}${redirectPath}`,
             });
         } catch {
             setError("Google login failed. Please try again.");
@@ -82,7 +134,6 @@ export default function LoginForm() {
                     className="w-full rounded-lg border p-3"
                 />
 
-
                 <div className="flex justify-end">
                     <a
                         href="#"
@@ -93,9 +144,10 @@ export default function LoginForm() {
                     </a>
                 </div>
 
-
                 {error && (
-                    <p className="text-sm text-red-600">{error}</p>
+                    <p className="text-sm text-red-600">
+                        {error}
+                    </p>
                 )}
 
                 <button

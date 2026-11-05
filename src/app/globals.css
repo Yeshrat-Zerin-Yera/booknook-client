@@ -1,8 +1,17 @@
+
 @import "tailwindcss";
 
+/* ===================================
+   LIGHT THEME
+=================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f6;
+  --foreground: #252a27;
+  --surface: #ffffff;
+  --border: #e8e3d8;
+  --muted: #6b7280;
+  --primary: #174c3c;
 }
 
 @theme inline {
@@ -12,20 +21,154 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ===================================
+   DARK THEME
+=================================== */
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #111a16;
+  --foreground: #e8eee9;
+  --surface: #1b2821;
+  --border: #35473c;
+  --muted: #a3b1a7;
+  --primary: #a5d6b8;
+}
+
+/* ===================================
+   GLOBAL STYLES
+=================================== */
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
-/* BookNook Hero Slider */
+/* Smooth transitions */
+body,
+nav,
+footer,
+section,
+article,
+main,
+form,
+input,
+textarea,
+select,
+button {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* ===================================
+   DARK MODE BACKGROUNDS
+=================================== */
+
+html[data-theme="dark"] body {
+  background-color: #111a16 !important;
+  color: #e8eee9;
+}
+
+/* Common light backgrounds */
+html[data-theme="dark"] [class~="bg-white"],
+html[data-theme="dark"] [class~="bg-gray-50"],
+html[data-theme="dark"] [class~="bg-gray-100"],
+html[data-theme="dark"] [class~="bg-[#ffffff]"] {
+  background-color: #1b2821 !important;
+}
+
+/* BookNook cream background */
+html[data-theme="dark"] [class~="bg-[#faf9f6]"],
+html[data-theme="dark"] [class~="bg-[#faf9f6]/95"] {
+  background-color: #111a16 !important;
+}
+
+/* Light green background */
+html[data-theme="dark"] [class~="bg-[#e9eee9]"] {
+  background-color: #293b30 !important;
+}
+
+/* ===================================
+   DARK MODE TEXT
+=================================== */
+
+html[data-theme="dark"] [class~="text-[#174c3c]"] {
+  color: #a5d6b8 !important;
+}
+
+html[data-theme="dark"] [class~="text-gray-900"],
+html[data-theme="dark"] [class~="text-gray-800"],
+html[data-theme="dark"] [class~="text-gray-700"],
+html[data-theme="dark"] [class~="text-black"] {
+  color: #e8eee9 !important;
+}
+
+html[data-theme="dark"] [class~="text-gray-600"],
+html[data-theme="dark"] [class~="text-gray-500"],
+html[data-theme="dark"] [class~="text-gray-400"] {
+  color: #a3b1a7 !important;
+}
+
+/* ===================================
+   DARK MODE BORDERS
+=================================== */
+
+html[data-theme="dark"] [class~="border-[#e8e3d8]"],
+html[data-theme="dark"] [class~="border-[#dce5dc]"],
+html[data-theme="dark"] [class~="border-gray-200"],
+html[data-theme="dark"] [class~="border-gray-300"] {
+  border-color: #35473c !important;
+}
+
+/* ===================================
+   DARK MODE INPUTS
+=================================== */
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  background-color: #1b2821 !important;
+  color: #e8eee9 !important;
+  border-color: #35473c !important;
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: #a3b1a7 !important;
+}
+
+/* ===================================
+   DARK MODE HOVER EFFECTS
+=================================== */
+
+html[data-theme="dark"] [class~="hover:bg-[#e9eee9]"]:hover {
+  background-color: #293b30 !important;
+}
+
+/* ===================================
+   DARK MODE SHADOWS
+=================================== */
+
+html[data-theme="dark"] [class~="shadow-lg"],
+html[data-theme="dark"] [class~="shadow-xl"] {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* ===================================
+   HERO SLIDER
+=================================== */
 
 .booknook-swiper {
   width: 100%;

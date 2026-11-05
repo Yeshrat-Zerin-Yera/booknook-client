@@ -8,8 +8,8 @@ import JwtTest from "@/components/JwtTest";
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#faf9f6]">
-      <JwtTest />
-      <AuthTest />
+      {/* <JwtTest />
+      <AuthTest /> */}
       <HeroSlider />
       <NewArrivals />
       <PopularCategories />

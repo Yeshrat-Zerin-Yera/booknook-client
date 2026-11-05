@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { BookOpen, RotateCcw, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -20,31 +19,35 @@ interface Borrow {
 }
 
 export default function MyBorrowsList() {
-  // State
+  // Borrow records
   const [borrows, setBorrows] = useState<Borrow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Return book states
   const [returningId, setReturningId] = useState<string | null>(null);
   const [selectedBorrowId, setSelectedBorrowId] = useState<string | null>(null);
   const [returnedBookTitle, setReturnedBookTitle] = useState("");
 
-  // Router and authentication
-  const router = useRouter();
+  // Authentication
   const { data: session, isPending } = authClient.useSession();
 
-  // Redirect unauthenticated users
+  // Fetch borrow records after authentication is confirmed
   useEffect(() => {
-    if (!isPending && !session) {
-      router.replace("/login");
-    }
-  }, [isPending, session, router]);
+    if (isPending) return;
 
-  // Fetch borrow records
-  useEffect(() => {
-    if (isPending || !session) return;
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
 
     async function fetchBorrows() {
       try {
+        setLoading(true);
+        setError("");
+
         const { data: tokenData, error: tokenError } =
           await authClient.token();
 
@@ -58,6 +61,7 @@ export default function MyBorrowsList() {
             headers: {
               Authorization: `Bearer ${tokenData.token}`,
             },
+            cache: "no-store",
           }
         );
 
@@ -69,19 +73,29 @@ export default function MyBorrowsList() {
           );
         }
 
-        setBorrows(result.data);
+        if (!cancelled) {
+          setBorrows(result.data);
+        }
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Something went wrong."
-        );
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Something went wrong."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     fetchBorrows();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isPending, session]);
 
   // Return a borrowed book
@@ -115,12 +129,11 @@ export default function MyBorrowsList() {
         );
       }
 
-      // Find the returned book's title
       const returnedBook = borrows.find(
         (borrow) => borrow._id === borrowId
       );
 
-      // Remove returned book from the list
+      // Remove the returned book from the list
       setBorrows((previousBorrows) =>
         previousBorrows.filter(
           (borrow) => borrow._id !== borrowId
@@ -142,8 +155,8 @@ export default function MyBorrowsList() {
     }
   }
 
-  // Authentication loading / redirect
-  if (isPending || !session) {
+  // Authentication loading
+  if (isPending) {
     return (
       <section className="min-h-screen">
         <LoadingSpinner
@@ -152,6 +165,11 @@ export default function MyBorrowsList() {
         />
       </section>
     );
+  }
+
+  // RequireAuth handles unauthenticated users.
+  if (!session) {
+    return null;
   }
 
   // Borrow records loading
@@ -187,7 +205,9 @@ export default function MyBorrowsList() {
       {error && (
         <div className="mb-6 flex items-center justify-between rounded-xl bg-red-50 p-4 text-red-600">
           <p>{error}</p>
+
           <button
+            type="button"
             onClick={() => setError("")}
             aria-label="Dismiss error"
           >
@@ -319,7 +339,7 @@ export default function MyBorrowsList() {
         </div>
       )}
 
-      {/* Custom Return Confirmation Modal */}
+      {/* Return Confirmation Modal */}
       {selectedBorrowId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
@@ -369,12 +389,10 @@ export default function MyBorrowsList() {
         </div>
       )}
 
-
       {/* Return Success Modal */}
       {returnedBookTitle && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
-
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <BookOpen size={32} className="text-green-800" />
             </div>
@@ -397,11 +415,9 @@ export default function MyBorrowsList() {
             >
               Done
             </button>
-
           </div>
         </div>
       )}
-
     </section>
   );
 }

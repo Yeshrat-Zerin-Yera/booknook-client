@@ -4,14 +4,24 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Menu, X, ChevronDown } from "lucide-react";
+import {
+  BookOpen,
+  Menu,
+  X,
+  ChevronDown,
+  Sun,
+  Moon,
+} from "lucide-react";
+
 import { authClient } from "@/lib/auth-client";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   const { data: session, isPending } = authClient.useSession();
 
@@ -26,6 +36,8 @@ export default function Navbar() {
     { name: "My Borrows", href: "/my-borrows" },
   ];
 
+  const user = session?.user;
+
   async function handleLogout() {
     const { error } = await authClient.signOut();
 
@@ -39,8 +51,6 @@ export default function Navbar() {
     router.push("/");
     router.refresh();
   }
-
-  const user = session?.user;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-[#e8e3d8] bg-[#faf9f6]/95 backdrop-blur-md">
@@ -81,10 +91,34 @@ export default function Navbar() {
             ))}
         </div>
 
-        {/* Desktop Authentication */}
+        {/* Desktop Actions */}
         <div className="relative hidden items-center gap-3 md:flex">
+
+          {/* Theme Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={
+              theme === "light"
+                ? "Enable dark mode"
+                : "Enable light mode"
+            }
+            title={
+              theme === "light" ? "Dark Mode" : "Light Mode"
+            }
+            className="rounded-lg border border-[#e8e3d8] p-2 text-[#174c3c] transition hover:bg-[#e9eee9]"
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </button>
+
           {isPending ? (
-            <span className="text-sm text-gray-500">Loading...</span>
+            <span className="text-sm text-gray-500">
+              Loading...
+            </span>
           ) : user ? (
             <div className="relative">
               <button
@@ -195,8 +229,27 @@ export default function Navbar() {
 
             <hr className="border-[#e8e3d8]" />
 
+            {/* Mobile Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex w-full items-center gap-3 rounded-lg border border-[#e8e3d8] p-3 text-[#174c3c]"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+
+              <span className="font-medium">
+                {theme === "light" ? "Dark Mode" : "Light Mode"}
+              </span>
+            </button>
+
             {isPending ? (
-              <p className="text-sm text-gray-500">Loading...</p>
+              <p className="text-sm text-gray-500">
+                Loading...
+              </p>
             ) : user ? (
               <>
                 <div className="flex items-center gap-3">

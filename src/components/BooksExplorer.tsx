@@ -95,7 +95,7 @@ export default function BooksExplorer() {
         </p>
 
         <h1 className="mb-4 text-4xl font-bold text-[#174c3c]">
-          All Books
+          Books
         </h1>
 
         <p className="text-gray-500">
