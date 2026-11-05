@@ -1,15 +1,37 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import BookCard from "./BookCard";
 import { Book } from "@/types/book";
 
+const allowedCategories = [
+  "Fiction",
+  "Science",
+  "History",
+  "Kids",
+  "Others",
+];
+
 export default function BooksExplorer() {
+  const searchParams = useSearchParams();
+  const urlCategory = searchParams.get("category");
+
   const [books, setBooks] = useState<Book[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Read the selected category from the URL.
+  useEffect(() => {
+    if (urlCategory && allowedCategories.includes(urlCategory)) {
+      setCategory(urlCategory);
+    } else {
+      setCategory("All");
+    }
+  }, [urlCategory]);
 
   useEffect(() => {
     async function fetchBooks() {
@@ -35,11 +57,6 @@ export default function BooksExplorer() {
 
     fetchBooks();
   }, []);
-
-  const categories = [
-    "All",
-    ...Array.from(new Set(books.map((book) => book.category))),
-  ];
 
   const filteredBooks = useMemo(() => {
     return books.filter((book) => {
@@ -92,7 +109,9 @@ export default function BooksExplorer() {
           onChange={(e) => setCategory(e.target.value)}
           className="rounded-xl border border-gray-200 px-5 py-3 outline-none"
         >
-          {categories.map((item) => (
+          <option value="All">All Categories</option>
+
+          {allowedCategories.map((item) => (
             <option key={item} value={item}>
               {item}
             </option>
@@ -101,14 +120,14 @@ export default function BooksExplorer() {
       </div>
 
       {filteredBooks.length > 0 ? (
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {filteredBooks.map((book) => (
             <BookCard key={book._id} book={book} />
           ))}
         </div>
       ) : (
         <p className="py-20 text-center text-gray-500">
-          No books found.
+          No books found in this category.
         </p>
       )}
     </section>

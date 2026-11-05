@@ -5,6 +5,9 @@ export interface Book {
   category: string;
   cover: string;
   description: string;
+  createdBy?: string;
+  createdByName?: string;
+  createdByEmail?: string;
   createdAt?: string;
   updatedAt?: string;
 }

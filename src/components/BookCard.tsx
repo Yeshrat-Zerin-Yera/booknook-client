@@ -37,7 +37,7 @@ export default function BookCard({ book }: BookCardProps) {
 
         <Link
           href={`/books/${book._id}`}
-          className="mt-5 inline-flex items-center gap-2 font-semibold text-[#174c3c] transition hover:text-[#9b7653]"
+          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#174c3c] px-5 py-3 font-semibold text-white transition hover:bg-[#123b2f]"
         >
           <BookOpen size={18} />
           View Details

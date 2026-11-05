@@ -1,32 +1,150 @@
 
 "use client";
 
-import { useState } from "react";
-import { BookPlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
+import { BookPlus, CheckCircle, XCircle, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
+type Toast = {
+  message: string;
+  type: "success" | "error";
+} | null;
+
 export default function AddBookForm() {
+  // Authentication
+  const { data: session, isPending } = authClient.useSession();
+
+  // Book form state
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [category, setCategory] = useState("");
   const [cover, setCover] = useState("");
   const [description, setDescription] = useState("");
 
-  const [submitted, setSubmitted] = useState(false);
+  // Submission and notification state
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [toast, setToast] = useState<Toast>(null);
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  // Display toast notification
+  function showToast(message: string, type: "success" | "error") {
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current);
+    }
+
+    setToast({ message, type });
+
+    toastTimer.current = setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  }
+
+  // Clean up toast timer
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) {
+        clearTimeout(toastTimer.current);
+      }
+    };
+  }, []);
+
+  // Submit form
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setLoading(true);
-    setError("");
-    setSubmitted(false);
+    if (loading) return;
+
+    if (isPending || !session) {
+      showToast("Please log in before adding a book.", "error");
+      return;
+    }
+
+    // Trim whitespace
+    const cleanTitle = title.trim();
+    const cleanAuthor = author.trim();
+    const cleanCategory = category.trim();
+    const cleanCover = cover.trim();
+    const cleanDescription = description.trim();
+
+    // Validate empty fields
+    if (
+      !cleanTitle ||
+      !cleanAuthor ||
+      !cleanCategory ||
+      !cleanCover ||
+      !cleanDescription
+    ) {
+      showToast("All fields are required.", "error");
+      return;
+    }
+
+    // Validate category
+    const allowedCategories = [
+      "Fiction",
+      "Science",
+      "History",
+      "Kids",
+      "Others",
+    ];
+
+    if (!allowedCategories.includes(cleanCategory)) {
+      showToast("Please select a valid category.", "error");
+      return;
+    }
+
+    // Validate title
+    if (cleanTitle.length < 2 || cleanTitle.length > 120) {
+      showToast(
+        "Title must be between 2 and 120 characters.",
+        "error"
+      );
+      return;
+    }
+
+    // Validate author
+    if (cleanAuthor.length < 2 || cleanAuthor.length > 80) {
+      showToast(
+        "Author name must be between 2 and 80 characters.",
+        "error"
+      );
+      return;
+    }
+
+    // Validate description
+    if (
+      cleanDescription.length < 10 ||
+      cleanDescription.length > 1000
+    ) {
+      showToast(
+        "Description must be between 10 and 1000 characters.",
+        "error"
+      );
+      return;
+    }
+
+    // Validate image URL
+    try {
+      const imageURL = new URL(cleanCover);
+
+      if (!["http:", "https:"].includes(imageURL.protocol)) {
+        throw new Error("Invalid image URL");
+      }
+    } catch {
+      showToast(
+        "Please enter a valid HTTP or HTTPS image URL.",
+        "error"
+      );
+      return;
+    }
 
     try {
-      // Step 1: Get JWT from Better Auth
+      setLoading(true);
+
+      // Get JWT from Better Auth
       const { data: tokenData, error: tokenError } =
         await authClient.token();
 
@@ -34,7 +152,7 @@ export default function AddBookForm() {
         throw new Error("Please log in before adding a book.");
       }
 
-      // Step 2: Send authenticated request
+      // Send authenticated request
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/books`,
         {
@@ -44,11 +162,11 @@ export default function AddBookForm() {
             Authorization: `Bearer ${tokenData.token}`,
           },
           body: JSON.stringify({
-            title,
-            author,
-            category,
-            cover,
-            description,
+            title: cleanTitle,
+            author: cleanAuthor,
+            category: cleanCategory,
+            cover: cleanCover,
+            description: cleanDescription,
           }),
         }
       );
@@ -59,28 +177,88 @@ export default function AddBookForm() {
         throw new Error(result.message || "Failed to add book.");
       }
 
-      // Step 3: Show success message
-      setSubmitted(true);
+      // Success notification
+      showToast("Book added successfully!", "success");
 
-      // Step 4: Clear the form
+      // Reset form
       setTitle("");
       setAuthor("");
       setCategory("");
       setCover("");
       setDescription("");
     } catch (err) {
-      setError(
+      showToast(
         err instanceof Error
           ? err.message
-          : "Something went wrong."
+          : "Something went wrong.",
+        "error"
       );
     } finally {
       setLoading(false);
     }
   }
 
+  // Authentication loading
+  if (isPending) {
+    return (
+      <section className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-[#174c3c]">Checking authentication...</p>
+      </section>
+    );
+  }
+
+  // Require login
+  if (!session) {
+    return (
+      <section className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+        <h1 className="text-2xl font-bold text-[#174c3c]">
+          Login Required
+        </h1>
+        <p className="mt-3 text-gray-600">
+          Please log in before adding a book.
+        </p>
+        <a
+          href="/login"
+          className="mt-5 rounded-xl bg-[#174c3c] px-6 py-3 text-white"
+        >
+          Go to Login
+        </a>
+      </section>
+    );
+  }
+
   return (
     <section className="mx-auto max-w-3xl px-6 py-16">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          role="alert"
+          className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-xl p-4 shadow-lg ${toast.type === "success"
+              ? "bg-[#174c3c] text-white"
+              : "bg-red-600 text-white"
+            }`}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle size={22} />
+          ) : (
+            <XCircle size={22} />
+          )}
+
+          <p className="flex-1 text-sm font-medium">
+            {toast.message}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            aria-label="Close notification"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Heading */}
       <div className="mb-10 text-center">
         <BookPlus className="mx-auto mb-4 h-12 w-12 text-[#174c3c]" />
 
@@ -97,6 +275,34 @@ export default function AddBookForm() {
         onSubmit={handleSubmit}
         className="space-y-6 rounded-2xl border border-[#e8e3d8] bg-white p-6 shadow-sm sm:p-10"
       >
+        {/* User Name */}
+        <div>
+          <label className="mb-2 block font-semibold text-gray-700">
+            Your Name
+          </label>
+
+          <input
+            type="text"
+            value={session.user.name || ""}
+            readOnly
+            className="w-full cursor-not-allowed rounded-xl border border-[#e8e3d8] bg-gray-100 px-4 py-3 text-gray-600 outline-none"
+          />
+        </div>
+
+        {/* User Email */}
+        <div>
+          <label className="mb-2 block font-semibold text-gray-700">
+            Your Email
+          </label>
+
+          <input
+            type="email"
+            value={session.user.email || ""}
+            readOnly
+            className="w-full cursor-not-allowed rounded-xl border border-[#e8e3d8] bg-gray-100 px-4 py-3 text-gray-600 outline-none"
+          />
+        </div>
+
         {/* Book Title */}
         <div>
           <label className="mb-2 block font-semibold text-gray-700">
@@ -106,6 +312,8 @@ export default function AddBookForm() {
           <input
             type="text"
             required
+            minLength={2}
+            maxLength={120}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Enter book title"
@@ -122,6 +330,8 @@ export default function AddBookForm() {
           <input
             type="text"
             required
+            minLength={2}
+            maxLength={80}
             value={author}
             onChange={(event) => setAuthor(event.target.value)}
             placeholder="Enter author name"
@@ -143,13 +353,10 @@ export default function AddBookForm() {
           >
             <option value="">Select a category</option>
             <option value="Fiction">Fiction</option>
-            <option value="Classic">Classic</option>
-            <option value="Romance">Romance</option>
             <option value="Science">Science</option>
-            <option value="Adventure">Adventure</option>
-            <option value="Mystery">Mystery</option>
-            <option value="Poetry">Poetry</option>
-            <option value="Education">Education</option>
+            <option value="History">History</option>
+            <option value="Kids">Kids</option>
+            <option value="Others">Others</option>
           </select>
         </div>
 
@@ -160,8 +367,9 @@ export default function AddBookForm() {
           </label>
 
           <input
-            type="url"
+            type="text"
             required
+            maxLength={2048}
             value={cover}
             onChange={(event) => setCover(event.target.value)}
             placeholder="https://example.com/book-cover.jpg"
@@ -177,6 +385,8 @@ export default function AddBookForm() {
 
           <textarea
             required
+            minLength={10}
+            maxLength={1000}
             rows={5}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
@@ -193,26 +403,6 @@ export default function AddBookForm() {
         >
           {loading ? "Adding Book..." : "Add Book"}
         </button>
-
-        {/* Error Message */}
-        {error && (
-          <p
-            role="alert"
-            className="rounded-lg bg-red-50 p-4 text-sm text-red-700"
-          >
-            {error}
-          </p>
-        )}
-
-        {/* Success Message */}
-        {submitted && (
-          <p
-            role="status"
-            className="rounded-lg bg-[#e9eee9] p-4 text-sm text-[#174c3c]"
-          >
-            Book added successfully!
-          </p>
-        )}
       </form>
     </section>
   );

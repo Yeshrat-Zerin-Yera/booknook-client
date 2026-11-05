@@ -10,11 +10,10 @@ import {
 
 const categories = [
   { name: "Fiction", icon: BookOpen },
-  { name: "Romance", icon: Heart },
   { name: "Science", icon: FlaskConical },
-  { name: "Adventure", icon: Compass },
-  { name: "Poetry", icon: Feather },
-  { name: "Education", icon: GraduationCap },
+  { name: "History", icon: GraduationCap },
+  { name: "Kids", icon: Heart },
+  { name: "Others", icon: Compass },
 ];
 
 export default function PopularCategories() {
