@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import BooksExplorer from "@/components/BooksExplorer";
 
 export const metadata: Metadata = {
@@ -9,7 +10,15 @@ export const metadata: Metadata = {
 export default function BooksPage() {
   return (
     <main className="min-h-screen bg-[#faf9f6]">
-      <BooksExplorer />
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center">
+            <p>Loading books...</p>
+          </div>
+        }
+      >
+        <BooksExplorer />
+      </Suspense>
     </main>
   );
 }
