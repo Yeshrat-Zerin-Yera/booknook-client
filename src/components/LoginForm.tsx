@@ -86,22 +86,53 @@ export default function LoginForm() {
     }
 
     // Google login
+    // async function handleGoogleLogin() {
+    //     setError("");
+
+    //     try {
+    //         const redirectPath = getSafeRedirectPath();
+
+    //         const appUrl =
+    //             process.env.NEXT_PUBLIC_APP_URL ||
+    //             window.location.origin;
+
+    //         await authClient.signIn.social({
+    //             provider: "google",
+    //             callbackURL: `${appUrl}${redirectPath}`,
+    //         });
+    //     } catch {
+    //         setError("Google login failed. Please try again.");
+    //     }
+    // }
     async function handleGoogleLogin() {
         setError("");
+        setLoading(true);
 
         try {
             const redirectPath = getSafeRedirectPath();
 
-            const appUrl =
-                process.env.NEXT_PUBLIC_APP_URL ||
-                window.location.origin;
+            const callbackURL = new URL(
+                redirectPath,
+                window.location.origin
+            ).toString();
 
-            await authClient.signIn.social({
+            const result = await authClient.signIn.social({
                 provider: "google",
-                callbackURL: `${appUrl}${redirectPath}`,
+                callbackURL,
+                newUserCallbackURL: callbackURL,
+                errorCallbackURL: window.location.origin + "/login",
             });
-        } catch {
+
+            if (result.error) {
+                setError(
+                    result.error.message ?? "Google login failed."
+                );
+                setLoading(false);
+            }
+        } catch (err) {
+            console.error("Google login error:", err);
             setError("Google login failed. Please try again.");
+            setLoading(false);
         }
     }
 
