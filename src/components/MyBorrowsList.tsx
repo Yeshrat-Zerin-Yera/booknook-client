@@ -26,6 +26,7 @@ export default function MyBorrowsList() {
   const [error, setError] = useState("");
   const [returningId, setReturningId] = useState<string | null>(null);
   const [selectedBorrowId, setSelectedBorrowId] = useState<string | null>(null);
+  const [returnedBookTitle, setReturnedBookTitle] = useState("");
 
   // Router and authentication
   const router = useRouter();
@@ -114,11 +115,21 @@ export default function MyBorrowsList() {
         );
       }
 
+      // Find the returned book's title
+      const returnedBook = borrows.find(
+        (borrow) => borrow._id === borrowId
+      );
+
       // Remove returned book from the list
       setBorrows((previousBorrows) =>
         previousBorrows.filter(
           (borrow) => borrow._id !== borrowId
         )
+      );
+
+      // Show success modal
+      setReturnedBookTitle(
+        returnedBook?.bookTitle || "Your book"
       );
     } catch (err) {
       setError(
@@ -132,28 +143,28 @@ export default function MyBorrowsList() {
   }
 
   // Authentication loading / redirect
- if (isPending || !session) {
-  return (
-    <section className="min-h-screen">
-      <LoadingSpinner
-        message="Checking authentication..."
-        fullScreen
-      />
-    </section>
-  );
-}
+  if (isPending || !session) {
+    return (
+      <section className="min-h-screen">
+        <LoadingSpinner
+          message="Checking authentication..."
+          fullScreen
+        />
+      </section>
+    );
+  }
 
   // Borrow records loading
   if (loading) {
-  return (
-    <section className="min-h-screen">
-      <LoadingSpinner
-        message="Loading your borrowed books..."
-        fullScreen
-      />
-    </section>
-  );
-}
+    return (
+      <section className="min-h-screen">
+        <LoadingSpinner
+          message="Loading your borrowed books..."
+          fullScreen
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-16">
@@ -357,6 +368,40 @@ export default function MyBorrowsList() {
           </div>
         </div>
       )}
+
+
+      {/* Return Success Modal */}
+      {returnedBookTitle && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
+
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <BookOpen size={32} className="text-green-800" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-[#174c3c]">
+              Book Returned Successfully!
+            </h2>
+
+            <p className="mt-3 text-gray-600">
+              <span className="font-semibold text-[#174c3c]">
+                {returnedBookTitle}
+              </span>{" "}
+              has been successfully returned to the library.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setReturnedBookTitle("")}
+              className="mt-7 w-full rounded-lg bg-[#174c3c] px-5 py-3 font-semibold text-white transition hover:bg-[#23634f]"
+            >
+              Done
+            </button>
+
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }

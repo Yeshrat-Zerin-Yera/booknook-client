@@ -54,6 +54,8 @@ export default function RegisterForm() {
         return;
       }
 
+      await authClient.signOut();
+
       router.push("/login");
       router.refresh();
     } catch {
