@@ -130,7 +130,10 @@ export default async function BookDetailsPage({
 
             {/* Borrow Button */}
             <div className="mt-6">
-              <BorrowButton bookId={book._id} />
+              <BorrowButton
+                bookId={book._id.toString()}
+                copies={book.copies ?? 0}
+              />
             </div>
           </div>
         </div>

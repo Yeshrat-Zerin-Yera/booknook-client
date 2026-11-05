@@ -30,6 +30,9 @@ export default function AddBookForm() {
     null
   );
 
+  const [totalCopies, setTotalCopies] = useState("1");
+  const cleanTotalCopies = Number(totalCopies);
+
   // Display toast notification
   function showToast(message: string, type: "success" | "error") {
     if (toastTimer.current) {
@@ -79,6 +82,18 @@ export default function AddBookForm() {
       !cleanDescription
     ) {
       showToast("All fields are required.", "error");
+      return;
+    }
+
+    if (
+      !Number.isInteger(cleanTotalCopies) ||
+      cleanTotalCopies < 1 ||
+      cleanTotalCopies > 1000
+    ) {
+      showToast(
+        "Total copies must be a whole number between 1 and 1000.",
+        "error"
+      );
       return;
     }
 
@@ -167,6 +182,7 @@ export default function AddBookForm() {
             category: cleanCategory,
             cover: cleanCover,
             description: cleanDescription,
+            copies: cleanTotalCopies,
           }),
         }
       );
@@ -186,6 +202,7 @@ export default function AddBookForm() {
       setCategory("");
       setCover("");
       setDescription("");
+      setTotalCopies("1");
     } catch (err) {
       showToast(
         err instanceof Error
@@ -234,8 +251,8 @@ export default function AddBookForm() {
         <div
           role="alert"
           className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-xl p-4 shadow-lg ${toast.type === "success"
-              ? "bg-[#174c3c] text-white"
-              : "bg-red-600 text-white"
+            ? "bg-[#174c3c] text-white"
+            : "bg-red-600 text-white"
             }`}
         >
           {toast.type === "success" ? (
@@ -358,6 +375,29 @@ export default function AddBookForm() {
             <option value="Kids">Kids</option>
             <option value="Others">Others</option>
           </select>
+        </div>
+
+        {/* Total Copies */}
+        <div>
+          <label className="mb-2 block font-semibold text-gray-700">
+            Total Copies
+          </label>
+
+          <input
+            type="number"
+            required
+            min={1}
+            max={1000}
+            step={1}
+            value={totalCopies}
+            onChange={(event) => setTotalCopies(event.target.value)}
+            placeholder="Enter total copies"
+            className="w-full rounded-xl border border-[#e8e3d8] px-4 py-3 outline-none focus:border-[#174c3c]"
+          />
+
+          <p className="mt-1 text-sm text-gray-500">
+            How many copies of this book are available in your library?
+          </p>
         </div>
 
         {/* Cover Image */}

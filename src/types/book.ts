@@ -10,4 +10,5 @@ export interface Book {
   createdByEmail?: string;
   createdAt?: string;
   updatedAt?: string;
+  copies: number;
 }

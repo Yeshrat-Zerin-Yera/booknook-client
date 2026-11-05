@@ -39,69 +39,67 @@ export default function MyBooksList() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [saving, setSaving] = useState(false);
   const [updatedBookTitle, setUpdatedBookTitle] = useState("");
+
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
   // Fetch only the logged-in user's books
+  useEffect(() => {
+    if (isPending) return;
 
-useEffect(() => {
-  if (isPending) return;
-
-  // Redirect logged-out users
-  if (!session) {
-    router.replace("/login");
-    return;
-  }
-
-  async function fetchBooks() {
-    try {
-      setError("");
-
-      const { data: tokenData, error: tokenError } =
-        await authClient.token();
-
-      if (tokenError || !tokenData?.token) {
-        router.replace("/login");
-        return;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/books/my-books`,
-        {
-          headers: {
-            Authorization: `Bearer ${tokenData.token}`,
-          },
-        }
-      );
-
-      if (response.status === 401) {
-        router.replace("/login");
-        return;
-      }
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.message || "Failed to fetch your books."
-        );
-      }
-
-      setBooks(Array.isArray(result.data) ? result.data : []);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      );
-    } finally {
-      setLoading(false);
+    if (!session) {
+      router.replace("/login");
+      return;
     }
-  }
 
-  fetchBooks();
-}, [isPending, session, router]);
+    async function fetchBooks() {
+      try {
+        setError("");
 
+        const { data: tokenData, error: tokenError } =
+          await authClient.token();
+
+        if (tokenError || !tokenData?.token) {
+          router.replace("/login");
+          return;
+        }
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/books/my-books`,
+          {
+            headers: {
+              Authorization: `Bearer ${tokenData.token}`,
+            },
+          }
+        );
+
+        if (response.status === 401) {
+          router.replace("/login");
+          return;
+        }
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.message || "Failed to fetch your books."
+          );
+        }
+
+        setBooks(Array.isArray(result.data) ? result.data : []);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Something went wrong."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBooks();
+  }, [isPending, session, router]);
 
   // Delete a book
   async function handleDelete() {
@@ -138,17 +136,13 @@ useEffect(() => {
         );
       }
 
-      // Remove book from the list
       setBooks((previousBooks) =>
         previousBooks.filter(
           (book) => book._id !== bookToDelete._id
         )
       );
 
-      // Close confirmation modal
       setDeleteTarget(null);
-
-      // Show deletion success modal
       setDeletedBookTitle(bookToDelete.title);
     } catch (err) {
       setError(
@@ -174,7 +168,9 @@ useEffect(() => {
     const cleanCategory = editingBook.category.trim();
     const cleanCover = editingBook.cover.trim();
     const cleanDescription = editingBook.description.trim();
+    const cleanCopies = Number(editingBook.copies);
 
+    // Validate required fields
     if (
       !cleanTitle ||
       !cleanAuthor ||
@@ -186,21 +182,25 @@ useEffect(() => {
       return;
     }
 
+    // Validate title
     if (cleanTitle.length < 2 || cleanTitle.length > 120) {
       setError("Title must be between 2 and 120 characters.");
       return;
     }
 
+    // Validate author
     if (cleanAuthor.length < 2 || cleanAuthor.length > 80) {
       setError("Author must be between 2 and 80 characters.");
       return;
     }
 
+    // Validate category
     if (!categories.includes(cleanCategory)) {
       setError("Please select a valid category.");
       return;
     }
 
+    // Validate description
     if (
       cleanDescription.length < 10 ||
       cleanDescription.length > 1000
@@ -211,6 +211,19 @@ useEffect(() => {
       return;
     }
 
+    // Validate available copies
+    if (
+      !Number.isInteger(cleanCopies) ||
+      cleanCopies < 1 ||
+      cleanCopies > 1000
+    ) {
+      setError(
+        "Available copies must be a whole number between 1 and 1000."
+      );
+      return;
+    }
+
+    // Validate cover image URL
     try {
       const imageURL = new URL(cleanCover);
 
@@ -247,6 +260,7 @@ useEffect(() => {
             category: cleanCategory,
             cover: cleanCover,
             description: cleanDescription,
+            copies: cleanCopies,
           }),
         }
       );
@@ -259,7 +273,7 @@ useEffect(() => {
         );
       }
 
-      // Update the local book using the saved form values
+      // Update local book state
       const updatedBook: Book = {
         ...editingBook,
         ...(result.data ?? {}),
@@ -268,6 +282,7 @@ useEffect(() => {
         category: cleanCategory,
         cover: cleanCover,
         description: cleanDescription,
+        copies: cleanCopies,
       };
 
       setBooks((previousBooks) =>
@@ -276,11 +291,8 @@ useEffect(() => {
         )
       );
 
-      // Close edit modal
       setEditingBook(null);
       setError("");
-
-      // Show update success modal
       setUpdatedBookTitle(cleanTitle);
     } catch (err) {
       setError(
@@ -293,21 +305,20 @@ useEffect(() => {
     }
   }
 
- // Loading state
-if (loading) {
-  return (
-    <section className="min-h-screen">
-      <LoadingSpinner
-        message="Loading your books..."
-        fullScreen
-      />
-    </section>
-  );
-}
+  // Loading state
+  if (loading || isPending || !session) {
+    return (
+      <section className="min-h-screen">
+        <LoadingSpinner
+          message="Loading your books..."
+          fullScreen
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-16">
-
       {/* Page Heading */}
       <div className="mb-10">
         <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#a17b45]">
@@ -346,7 +357,6 @@ if (loading) {
       {editingBook && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl sm:p-8">
-
             <button
               type="button"
               onClick={() => {
@@ -388,7 +398,6 @@ if (loading) {
             )}
 
             <form onSubmit={handleUpdate} className="space-y-4">
-
               {/* Title */}
               <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-700">
@@ -458,6 +467,33 @@ if (loading) {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Available Copies */}
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                  Available Copies
+                </label>
+
+                <input
+                  type="number"
+                  value={editingBook.copies ?? 0}
+                  onChange={(e) =>
+                    setEditingBook({
+                      ...editingBook,
+                      copies: Number(e.target.value),
+                    })
+                  }
+                  required
+                  min={1}
+                  max={1000}
+                  step={1}
+                  className="w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#174c3c]"
+                />
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Update the number of copies currently available for borrowing.
+                </p>
               </div>
 
               {/* Cover Image */}
@@ -533,7 +569,6 @@ if (loading) {
       {deleteTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
-
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600">
               <Trash2 size={26} />
             </div>
@@ -548,7 +583,6 @@ if (loading) {
               This action cannot be undone.
             </p>
 
-            {/* Delete error */}
             {error && (
               <div
                 role="alert"
@@ -589,7 +623,6 @@ if (loading) {
       {updatedBookTitle && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
-
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600">
               <CheckCircle size={36} />
             </div>
@@ -618,7 +651,6 @@ if (loading) {
       {deletedBookTitle && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
-
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600">
               <CheckCircle size={36} />
             </div>
@@ -645,14 +677,12 @@ if (loading) {
 
       {/* BOOKS LIST */}
       <div className="overflow-hidden rounded-2xl border border-[#e8e3d8] bg-white">
-
         {books.length > 0 ? (
           books.map((book) => (
             <div
               key={book._id}
               className="flex flex-col gap-5 border-b border-[#e8e3d8] p-5 last:border-b-0 sm:flex-row sm:items-center"
             >
-
               {/* Book Cover */}
               <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-[#eeeae1]">
                 <Image
@@ -677,11 +707,17 @@ if (loading) {
                 <span className="mt-3 inline-block rounded-full bg-[#e9eee9] px-3 py-1 text-xs font-semibold text-[#174c3c]">
                   {book.category}
                 </span>
+
+                <p className="mt-2 text-sm text-gray-600">
+                  Available Copies:{" "}
+                  <span className="font-semibold text-[#174c3c]">
+                    {book.copies ?? 0}
+                  </span>
+                </p>
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
-
                 <Link
                   href={`/books/${book._id}`}
                   className="flex items-center gap-2 rounded-lg border border-[#174c3c] px-4 py-2 text-sm font-semibold text-[#174c3c] transition hover:bg-[#e9eee9]"
@@ -694,7 +730,10 @@ if (loading) {
                   type="button"
                   onClick={() => {
                     setError("");
-                    setEditingBook({ ...book });
+                    setEditingBook({
+                      ...book,
+                      copies: book.copies ?? 0,
+                    });
                   }}
                   className="flex items-center gap-2 rounded-lg bg-[#e9eee9] px-4 py-2 text-sm font-semibold text-[#174c3c] transition hover:bg-[#dce6dc]"
                 >
@@ -728,7 +767,6 @@ if (loading) {
       <p className="mt-5 text-sm text-gray-500">
         Showing {books.length} books.
       </p>
-
     </section>
   );
 }

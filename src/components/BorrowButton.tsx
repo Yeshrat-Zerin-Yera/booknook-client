@@ -2,14 +2,21 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
 interface BorrowButtonProps {
   bookId: string;
+  copies: number;
 }
 
-export default function BorrowButton({ bookId }: BorrowButtonProps) {
+export default function BorrowButton({
+  bookId,
+  copies,
+}: BorrowButtonProps) {
+  const router = useRouter();
+
   const { data: session, isPending } = authClient.useSession();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -20,11 +27,18 @@ export default function BorrowButton({ bookId }: BorrowButtonProps) {
   const userName = session?.user?.name || "";
   const userEmail = session?.user?.email || "";
 
+  const isAvailable = copies > 0;
+
   async function handleBorrow() {
     setError("");
 
     if (!session?.user) {
       setError("Please log in before borrowing a book.");
+      return;
+    }
+
+    if (!isAvailable) {
+      setError("This book is not available right now.");
       return;
     }
 
@@ -55,13 +69,20 @@ export default function BorrowButton({ bookId }: BorrowButtonProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to borrow this book.");
+        throw new Error(
+          result.message || "Failed to borrow this book."
+        );
       }
 
       setSuccess(true);
+
+      // Refresh the latest book data and available copies.
+      router.refresh();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Something went wrong."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -70,18 +91,35 @@ export default function BorrowButton({ bookId }: BorrowButtonProps) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setError("");
-          setSuccess(false);
-          setIsOpen(true);
-        }}
-        disabled={isPending}
-        className="mt-8 w-fit rounded-xl bg-[#174c3c] px-8 py-3 font-semibold text-white transition hover:bg-[#23634f] disabled:cursor-wait disabled:opacity-60"
-      >
-        {isPending ? "Loading..." : "Borrow This Book"}
-      </button>
+      <div className="mt-8">
+        <p className="mb-3 text-sm font-medium text-gray-600">
+          Available Copies:{" "}
+          <span className="font-bold text-[#174c3c]">
+            {copies}
+          </span>
+        </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            setSuccess(false);
+            setIsOpen(true);
+          }}
+          disabled={isPending || !isAvailable}
+          className={`w-fit rounded-xl px-8 py-3 font-semibold transition ${
+            isAvailable
+              ? "bg-[#174c3c] text-white hover:bg-[#23634f]"
+              : "cursor-not-allowed bg-gray-300 text-gray-600"
+          } disabled:cursor-not-allowed disabled:opacity-60`}
+        >
+          {isPending
+            ? "Loading..."
+            : isAvailable
+              ? "Borrow This Book"
+              : "Not Available"}
+        </button>
+      </div>
 
       {isOpen && (
         <div
@@ -106,8 +144,8 @@ export default function BorrowButton({ bookId }: BorrowButtonProps) {
                 </h2>
 
                 <p className="mt-3 text-gray-600">
-                  Your book has been borrowed successfully. You can view
-                  your borrowing record on the My Borrows page.
+                  Your book has been borrowed successfully. You can
+                  view your borrowing record on the My Borrows page.
                 </p>
 
                 <Link
@@ -148,6 +186,7 @@ export default function BorrowButton({ bookId }: BorrowButtonProps) {
                       <label className="mb-2 block text-sm font-semibold text-gray-700">
                         Your Name
                       </label>
+
                       <input
                         type="text"
                         value={userName}
@@ -160,6 +199,7 @@ export default function BorrowButton({ bookId }: BorrowButtonProps) {
                       <label className="mb-2 block text-sm font-semibold text-gray-700">
                         Your Email
                       </label>
+
                       <input
                         type="email"
                         value={userEmail}
@@ -194,7 +234,12 @@ export default function BorrowButton({ bookId }: BorrowButtonProps) {
                     <button
                       type="button"
                       onClick={handleBorrow}
-                      disabled={loading || !userName || !userEmail}
+                      disabled={
+                        loading ||
+                        !userName ||
+                        !userEmail ||
+                        !isAvailable
+                      }
                       className="flex-1 rounded-xl bg-[#174c3c] px-4 py-3 font-semibold text-white hover:bg-[#23634f] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {loading ? "Confirming..." : "Confirm Borrow"}
